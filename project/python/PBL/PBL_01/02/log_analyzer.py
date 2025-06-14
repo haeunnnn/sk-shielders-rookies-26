@@ -15,17 +15,27 @@
 # --------------------------------------------------------------------------------------------------------------------------------------------
 
 import re
-import csv
+import os
+import pandas as pd
 
 # 로그 파일 경로 입력 받아 파일 읽기
 def read_log_file():
+    # 파일 내용을 저장할 리스트
     log_lines = []
 
-    file_path = input("로그 파일 경로를 입력해주세요: ")
-    with open(file_path, 'r', encoding="utf-8") as f:
-        for line in f:
-            log_lines.append(line.strip())
-    return log_lines
+    # 유효한 파일 경로를 입력 받을 때까지 반복
+    while True:
+        file_path = input("로그 파일 경로를 입력해주세요: ")
+
+        # 유효한 파일 경로일 경우 파일 내용 읽고 리스트로 저장
+        if os.path.exists(file_path):
+            with open(file_path, 'r', encoding="utf-8") as f:
+                for line in f:
+                    log_lines.append(line.strip())
+            return log_lines
+        # 유효하지 않은 파일 경로일 경우 메시지 출력 후 다시 입력 받기
+        else:
+            print("유효하지 않은 파일입니다.")
 
 # IP 주소 추출
 def extract_ip_addresses(log_lines):
@@ -61,8 +71,8 @@ def calculate_ip_frequency(ip_addresses):
     return sorted_ip_frequency
 
 # 상위 3개 IP 주소 출력
-def display_top_3_ips(ip_frequency):
-    top_3_ips = ip_frequency[:3]
+def display_top_3_ips(sorted_ip_frequency):
+    top_3_ips = sorted_ip_frequency[:3]
     print("--------- IP 주소 빈도 상위 3개 출력 ---------")
     for i in top_3_ips:
         print(f"IP 주소 : {i[0]}, 접속 횟수 : {i[1]}")
@@ -70,13 +80,24 @@ def display_top_3_ips(ip_frequency):
 
 # 분석 결과 CSV 저장
 def save_analysis_to_csv(ip_frequency):
-    for i in ip_frequency:
-        print(i)
-    # print(ip_frequency)
+    df = pd.DataFrame(ip_frequency, columns=["IP Address", "IP Count"])
+    df.to_csv("ip_analysis.csv",index=False, encoding="utf-8")
+    
 
+# 테스트
+try:
+    # 파일 읽기
+    log_lines = read_log_file()
 
-log_lines = read_log_file()
-ip_addresses = extract_ip_addresses(log_lines)
-ip_frequency = calculate_ip_frequency(ip_addresses)
-display_top_3_ips(ip_frequency)
-save_analysis_to_csv(ip_frequency)
+    if log_lines:
+        # IP 주소 필터링
+        ip_addresses = extract_ip_addresses(log_lines)
+        # IP 주소 빈도수 계산
+        ip_frequency = calculate_ip_frequency(ip_addresses)
+        # 상위 3개 IP 주소 출력
+        display_top_3_ips(ip_frequency)
+        # IP 빈도수 분석 데이터 저장
+        save_analysis_to_csv(ip_frequency)
+
+except Exception as e:
+    print(f"오류가 발생했습니다 : {e}")
