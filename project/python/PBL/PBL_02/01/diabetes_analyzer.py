@@ -28,31 +28,36 @@ df = pd.read_csv('diabetes.csv')
 # 결측치 처리할 열 리스트로 저장
 columns_to_replace = ['Glucose', 'BloodPressure', 'SkinThickness', 'Insulin', 'BMI']
 
-# ------ 결측치 처리 ------------------------------
+# ----------------------------------
+# 결측치 처리
+# ----------------------------------
+
+# 0 값을 NaN으로 대체
+df[columns_to_replace] = df[columns_to_replace].replace(0, np.nan)
 
 # 0 값을 평균으로 대체
-df[columns_to_replace] = df[columns_to_replace].replace(0, np.nan)
 for column in columns_to_replace:
     df[column].fillna(df[column].mean(), inplace=True)
 
 # 이상치 처리할 열 리스트로 저장
-colums_for_outliers = ['SkinThickness', 'Insulin']
+columns_for_outliers = ['SkinThickness', 'Insulin']
 
-# -------------------------------------------------
-
-# ------- 이상치 처리 -------------------------------
+# === 이상치 처리 ===
 
 # 이상치 처리 (상위 1% 값을 평균으로 대체)
-for column in colums_for_outliers:
+for column in columns_for_outliers:  
     # 상위 1% 값 계산
     threshold = df[column].quantile(0.99)
     
-    # 상위 1% 값을 이상치를 제외한 나머지 데이터의 평균으로 대체
-    df[column] = np.where(df[column] > threshold, df[column].mean(), df[column])
+    # 이상치가 아닌 값들만 필터링해서 평균 계산
+    mean_without_outliers = df[df[column] <= threshold][column].mean()
+    
+    # 이상치를 평균으로 대체
+    df[column] = np.where(df[column] > threshold, mean_without_outliers, df[column])
 
-# -------------------------------------------------
-
-# ------- 정규화 처리 -------------------------------
+# ----------------------------------
+# 정규화 처리
+# ----------------------------------
 
 # MinMaxScaler 객체 생성
 scaler = MinMaxScaler()
@@ -60,9 +65,9 @@ scaler = MinMaxScaler()
 # Age 열을 MinMaxScaler로 0~1 범위로 정규화
 df['Age'] = scaler.fit_transform(df[['Age']])
 
-# -------------------------------------------------
-
-# ------- EDA -------------------------------------
+# ----------------------------------
+# EDA
+# ----------------------------------
 
 # 각 열의 결측치 개수 출력
 print("\n------- 각 열의 결측치 개수 -------\n")
@@ -73,7 +78,5 @@ print("\n------- Outcome 별 Glucose 평균 -------\n")
 print(df.groupby('Outcome')['Glucose'].mean())
 
 # 전처리 후 데이터 프레임 상위 5개 행 출력
-print("\n------- 전처리 후 데이터 프레임 상위 5개 행 -------\ns")
+print("\n------- 전처리 후 데이터 프레임 상위 5개 행 -------\n")
 print(df.head())
-
-# -------------------------------------------------
