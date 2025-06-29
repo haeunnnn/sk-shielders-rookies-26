@@ -22,40 +22,193 @@
     - openai Python 라이브러리 사용
     - OpenAiAgent 클래스를 만들어 기능 구성
     - 함수 호출 여부 판단, 실행 결과 처리 로직 포함
-    - 함수 호출 여부 판단, 실행 결과 처리 로직 포함
     - 실제 실행 가능한 코드로 구성할 것(단, API Key는 하드코딩하지 말고 별도 변수 처리)
-
-문제 해결 가이드
-- API 환경 설정
-    - openai 및 OpenAI 모듈 임포트
-    - API Key 변수 설정(실제 실행 시 환경 변수 등 활용 권장)
-- 함수 정의
-    - convert_date_format(date_str, current_format, target_format)
-    - add_numbers(x, y)
-    - 두 함수에 대한 Function Calling용 JSON schema 정의
-- 에이전트 클래스 구현
-    - OpenAIAgent 클래스
-    - chat() 메서드: 사용자 입력을 받아 대화 처리
-    - call_openai, handle_function_call 등 서브 메서드 포함
-- 함수 호출 흐름 처리
-    - 모델의 응답에 function_call 존재 시 → 함수 실행
-    - 실행 결과를 messages에 추가하여 두 번째 요청 → 최종 자연어 응답
-- 테스트
-    - "2024-12-25을 '2024년 12월 25일' 형식으로 바꿔줘"
-    - "23.5와 3.1을 더하면 얼마야?" 등으로 테스트
 """
 
 import os
 import openai
 import json
+from openai import OpenAI
+from dotenv import load_dotenv
 from datetime import datetime
 
-# 환경 변수
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-openai.api_key = OPENAI_API_KEY
+# 환경 변수에서 OpenAI API 키 로드
+load_dotenv()
 
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+client = OpenAI(api_key=OPENAI_API_KEY)
+
+# ---------------------------------------
 # 함수 정의
+# ---------------------------------------
 
-# Fuction Calling
+# 날짜 문자열을 다른 형식으로 변환하는 함수
+def convert_date_format(date_str, current_format, target_format):
+    try:
+        dt = datetime.strptime(date_str, current_format)
+        return dt.strftime(target_format)
+    except Exception as e:
+        return f"날자 변환 오류: {e}"
 
-# 
+# 두 숫자를 더하는 함수
+def add_numbers(x, y):
+    return x + y
+
+# ---------------------------------------
+# Function Calling용 함수 정의
+# ---------------------------------------
+
+tools = [
+    {   
+        "type": "function",
+        "function": {
+            "name": "convert_date_format",
+            "description": "날짜 문자열을 지정된 형식으로 변환한다.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "date_str": {
+                        "type": "string",
+                        "description": "입력 날짜 문자열"
+                    },
+                    "current_format": {
+                        "type": "string",
+                        "description": "현재 날짜 형식 (예: '%Y-%m-%d')"
+                    },
+                    "target_format": {
+                        "type": "string",
+                        "description": "변환할 목표 날짜 형식 (예: '%Y년 %m월 %d일')"
+                    }
+                },
+                "required": ["date_str", "current_format", "target_format"]
+            },
+        },
+    },
+    {   
+        "type": "function",
+        "function": {
+            "name": "add_numbers",
+            "description": "두 숫자를 더한다.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "x": {
+                        "type": "number",
+                        "description": "첫 번째 숫자"
+                    },
+                    "y": {
+                        "type": "number",
+                        "description": "두 번째 숫자"
+                    }
+                },
+                "required": ["x", "y"]
+            },
+        },
+    },
+]
+
+# ---------------------------------------
+# OpenAIAgent 클래스 구현
+# ---------------------------------------
+
+class OpenAIAgent:
+    def __init__(self, model="gpt-4.1"):
+        # 모델명과 대화 메시지 초기화
+        self.model = model
+        self.messages = [
+            {
+                "role": "system", 
+                "content": "당신은 유능한 AI 비서입니다. 사용자의 요청에 따라 적절한 함수를 호출하고 결과를 자연어로 응답합니다."
+            }
+        ]
+    def chat(self, user_input):
+        # 사용자 입력 메시지 추가
+        self.messages.append({
+            "role": "user",
+            "content": user_input
+        })
+        
+        # 1차 OpenAI API 호출
+        response = client.chat.completions.create(
+            model=self.model,
+            messages=self.messages,
+            tools=tools,
+            tool_choice="auto"
+        )
+
+        message = response.choices[0].message
+        tool_call = message.tool_calls[0] if message.tool_calls else None
+
+        # 도구 호출이 있는 경우
+        if tool_call:
+            function_name = tool_call.function.name
+            arguments = tool_call.function.arguments
+            arguments = json.loads(arguments)
+            
+            # 실제 함수 실행
+            result = self.call_openai(function_name, arguments)
+
+            # 함수 호출 메시지 및 결과 메시지 추가
+            self.messages.append({
+                "role": "assistant",
+                "tool_calls": [tool_call.model_dump()],
+            })
+
+            self.messages.append({
+                "role": "tool",
+                "tool_call_id": tool_call.id,
+                "name": function_name,
+                "content": str(result)
+            })
+
+            # 2c차 OpenAI API 호출
+            final_response = client.chat.completions.create(
+                model=self.model,
+                messages=self.messages,
+                tools=tools,
+                tool_choice="auto"
+            )
+            reply = final_response.choices[0].message.content
+        else:
+            # 도구 호출이 없는 경우, 모델의 응답을 바로 사용
+            reply = message.content
+        
+        # 최종 응답 메시지 추가
+        self.messages.append({
+            "role": "assistant",
+            "content": reply
+        })
+
+        return reply
+    
+    def call_openai(self, function_name, arguments):
+        # 함수명에 따라 실제 파이썬 함수 실행
+        if function_name =='convert_date_format':
+            date_str = arguments.get('date_str')
+            current_format = arguments.get('current_format')
+            target_format = arguments.get('target_format')
+            return convert_date_format(date_str, current_format, target_format)
+        
+        elif function_name == 'add_numbers':
+            x = arguments.get('x')
+            y = arguments.get('y')
+            return add_numbers(x, y)
+        
+        else:
+            return f"알 수 없는 함수 호출: {function_name}"
+
+# ---------------------------------------
+# 테스트 코드
+# ---------------------------------------
+
+if __name__ == "__main__":
+    agent = OpenAIAgent()
+
+    while True:
+        user_input = input("사용자 입력: ")
+        if user_input.lower() in ["exit", "quit"]:
+            print("프로그램을 종료합니다.")
+            break
+
+        response = agent.chat(user_input)
+        print(f"응답: {response}")
