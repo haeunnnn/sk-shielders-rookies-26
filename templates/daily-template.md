@@ -58,5 +58,5 @@
 
 ## 🗂 관련 파일
 
-📁 코드 : [`/project/`](../project/) <br/>
-🖼 스크린샷 : [`/screenshots/`](../screenshots/)
+📁 코드 : [`/project/`](../../project/) <br/>
+🖼 스크린샷 : [`/screenshots/`](../../screenshots/)
