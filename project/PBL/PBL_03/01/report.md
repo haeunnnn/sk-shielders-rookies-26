@@ -22,7 +22,7 @@ PC_A의 Command Prompt에서 PC_C로의 ping을 시도했다.
 - **명령어** : `ping 192.168.5.10`
 - **결과** : `Request timed out`. 또는 `Destination Host Unreachable`. 메시지가 반복적으로 나타났으며, 이는 PC_A와 PC_C 간의 통신이 불가능함을 명확히 보여주었다.
 
-![img](02_ping_test.png)
+![img](02_ping_test.png){: width="400" height="400"}
 
 ### 2.2. PC별 TCP/IP 설정 확인
 `ipconfig` 명령어를 사용하여 각 PC의 네트워크 설정을 확인했다.
