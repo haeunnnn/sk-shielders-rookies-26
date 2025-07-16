@@ -8,6 +8,5 @@ __pycache__/
 *.exe
 *.xls
 *.xlsx
-*.pdf
 
 .env
