@@ -59,7 +59,7 @@ Tracing route to 192.168.5.10 over a maximum of 30 hops:
 PC_A의 기본 게이트웨이 역할을 하는 라우터(R1)의 라우팅 테이블을 show ip route 명령어로 확인했다.
 
 - **명령어** : `show ip route` (R1에서 실행)
-- **결과** :
+- **결과**
 
 ```
 Gateway of last resort is not set
@@ -77,7 +77,7 @@ S    192.168.5.0/24 is directly connected, Serial0/0
 PC_C의 기본 게이트웨이 역할을 하는 라우터(R2)의 라우팅 테이블을 show ip route 명령어로 확인했다.
 
 - **명령어** : show ip route (R2에서 실행)
-- **결과**:
+- **결과**
 
 ```
 Gateway of last resort is not set
@@ -98,7 +98,8 @@ C    192.168.5.0/24 is directly connected, FastEthernet0/0
 
 ### 3.1. PC_C 기본 게이트웨이 주소 수정
 **해결 방안** : PC_C의 IP Configuration 설정으로 이동하여 **Default Gateway 주소를 192.168.3.2**에서 올바른 값인 192.168.5.254로 변경했다.
-(여기에 PC_C 게이트웨이 수정 후 IP Configuration 스크린샷 첨부)
+
+![img](08_IP_Configuration.png)
 
 ### 3.2. R1 라우팅 테이블 수정 (PC_C 네트워크 경로)
 **해결 방안** : R1에 설정된 잘못된 정적 경로를 제거하고, PC_C 네트워크 (192.168.5.0/24)로의 올바른 정적 경로를 다음 홉(Next Hop) IP 주소를 명시하여 추가했다. R1과 R2를 연결하는 192.168.3.0/24 네트워크 상에서 R2의 Serial 인터페이스 IP 주소인 192.168.3.2를 다음 홉으로 지정했다.
@@ -111,7 +112,7 @@ R1(config)# end
 R1# write memory
 ```
 
-- **수정 후 R1 라우팅 테이블**
+**수정 후 R1 라우팅 테이블**
 
 ```
 S    192.168.5.0/24 [1/0] via 192.168.3.2
@@ -132,7 +133,7 @@ R2(config)# end
 R2# write memory
 ```
 
-- **수정 후 R2 라우팅 테이블** :
+**수정 후 R2 라우팅 테이블**
 
 ```
 S    192.168.1.0/24 [1/0] via 192.168.3.1
