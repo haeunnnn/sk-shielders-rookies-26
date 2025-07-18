@@ -6,19 +6,20 @@
 ## 2. 문제 상황 및 요구사항 재확인
 - **문제 상황** : `facebook_login.pcap` 파일을 통해 수집된 다수의 HTTPS 패킷에 대한 분석이 필요
 - **요구사항** : `facebook_login.pcap` 추적 파일을 기반으로 SSL 패킷을 분석하고, 다음 SSL/TLS 핸드셰이크 흐름에 따라 각 단계를 상세히 설명
-    1. Client Hello
-    2. Server Hello
-    3. Certificate
-    4. Server Key Exchange (선택적)
-    5. Certificate Request (선택적)
-    6. Server Hello Done
-    7. Certificate (클라이언트 측 - 상호 인증 시)
-    8. Client Key Exchange
-    9. Certificate Verify (클라이언트 측 - 상호 인증 시)
-    10. Change CipherSpec (클라이언트)
-    11. Finished (클라이언트)
-    12. Change CipherSpec (서버)
-    13. Finished (서버)
+
+1. Client Hello
+2. Server Hello
+3. Certificate
+4. Server Key Exchange (선택적)
+5. Certificate Request (선택적)
+6. Server Hello Done
+7. Certificate (클라이언트 측 - 상호 인증 시)
+8. Client Key Exchange
+9. Certificate Verify (클라이언트 측 - 상호 인증 시)
+10. Change CipherSpec (클라이언트)
+11. Finished (클라이언트)
+12. Change CipherSpec (서버)
+13. Finished (서버)
 
 ## 3. SSL/TLS 핸드셰이크 과정 상세 분석 (`facebook_login.pcap` 기반)
 `facebook_login.pcap` 파일에서 `ssl` 필터링 시 나타나는 총 7개의 패킷(`4`, `5`, `7`, `8`, `9`, `11`, `63`)을 대상으로 SSL/TLS 핸드셰이크 단계를 분석하였다.
@@ -33,7 +34,7 @@ SSL/TLS 핸드셰이크가 시작되기 전에, 클라이언트(`172.16.0.122`)�
 - **해석**: HTTPS 통신은 암호화된 HTTP 데이터를 전송하기 전에 먼저 안정적인 TCP 연결이 수립되어야 함을 보여준다.
 
 ### 3.2. SSL/TLS Handshake 단계별 분석
-1. Client Hello (`Client Hello`)
+#### 1. Client Hello (`Client Hello`)
 - **해당 패킷**  : `4` (Source: `172.16.0.122`, Destination: `69.63.180.173`)
 - **패킷 정보** : `TLSv1 Record Layer: Handshake Protocol: Client Hello`
 - **설명** : TCP 연결이 수립된 후, 클라이언트(`172.16.0.122`)가 SSL/TLS 통신을 시작하기 위해 서버(`69.63.180.173`)에게 보내는 첫 번째 핸드셰이크 메시지이다. 이 패킷은 클라이언트가 지원하는 암호화 능력과 선호하는 옵션들을 서버에 알린다.
@@ -50,7 +51,7 @@ SSL/TLS 핸드셰이크가 시작되기 전에, 클라이언트(`172.16.0.122`)�
 
 ![img](03_facebook_login_4.png)
 
-2. Server Hello, 3. Certificate, 6. Server Hello Done
+#### 2. Server Hello, 3. Certificate, 6. Server Hello Done
 - **해당 패킷** : `5` (Source: `69.63.180.173`, Destination: `172.16.0.122`)
 - **패킷 정보** : `TLSv1 Server Hello, Certificate, Server Hello Done`
 - **설명** : `Client Hello`(패킷 4)에 대한 서버(`69.63.180.173`)의 응답 패킷이다. 이 단일 패킷에는 세 가지 핸드셰이크 메시지가 포함되어 있다.
@@ -66,14 +67,14 @@ SSL/TLS 핸드셰이크가 시작되기 전에, 클라이언트(`172.16.0.122`)�
 
 ![img](03_facebook_login_5.png)
 
-4. Server Key Exchange 및 5. Certificate Request
+#### 4. Server Key Exchange 및 5. Certificate Request
 - **해당 패킷** : 주어진 `facebook_login.pcap` 파일의 패킷 목록에서는 이 단계들이 별도의 SSL/TLS 핸드셰이크 메시지로 명시적으로 나타나지 않는다.
 - **설명**
     - `Server Key Exchange` : 이 패킷은 `ECDHE`나 `DHE`와 같이 임시 키 교환 방식을 사용할 때 서버가 자신의 임시 공개 키 파라미터를 전송하는 단계이다. 이 통신에서는 서버가 `TLS_RSA_WITH_RC4_128_MD5`를 선택했으므로, 키 교환에 RSA를 사용한다. RSA 키 교환 방식에서는 서버 인증서에 포함된 공개 키를 바로 사용하므로, 별도의 `Server Key Exchange` 메시지가 필요 없다.
     - `Certificate Request`: 이 패킷은 서버가 클라이언트에게도 자신의 신원을 증명하기 위한 인증서를 요청할 때 사용된다 (상호 인증). 일반적인 웹 서비스 로그인에서는 드물게 사용되며, 이 `pcap` 파일에서도 발생하지 않았다.
 - **해석** : 패킷이 관찰되지 않는 것은 사용된 암호화 스위트(`TLS_RSA_WITH_RC4_128_MD5`)와 인증 방식에 따라 특정 핸드셰이크 단계가 생략될 수 있음을 보여준다.
 
-8. Client Key Exchange, 9. Certificate Verify, 10. Change CipherSpec (클라이언트), 11. Finished (클라이언트)
+#### 8. Client Key Exchange, 9. Certificate Verify, 10. Change CipherSpec (클라이언트), 11. Finished (클라이언트)
 - **해당 패킷** : `7` (Source: `172.16.0.122`, Destination: `69.63.180.173`)
 - **패킷 정보**: `TLSv1 Client Key Exchange, Change Cipher Spec, Encrypted Handshake Message`
 - **설명** : 이 패킷은 클라이언트(`172.16.0.122`)가 서버(`69.63.180.173`)에게 보내는 세 가지 중요한 메시지(`Client Key Exchange`, `Change Cipher Spec`, `Finished`)를 포함한다.
@@ -87,7 +88,7 @@ SSL/TLS 핸드셰이크가 시작되기 전에, 클라이언트(`172.16.0.122`)�
 
 ![img](03_facebook_login_7.png)
 
-12. Change CipherSpec (서버), 13. Finished (서버)
+#### 12. Change CipherSpec (서버), 13. Finished (서버)
 - **해당 패킷** : `8` (Source: `69.63.180.173`, Destination: `172.16.0.122`)
 - **패킷 정보** : `TLSv1 Change Cipher Spec, Encrypted Handshake Message`
 - **설명** : 클라이언트의 `Client Key Exchange` 및 `Change Cipher Spec` 메시지(`패킷 7`)에 대한 서버(`69.63.180.173`)의 응답으로, 서버 또한 암호화된 통신으로 전환하고 핸드셰이크를 최종적으로 완료했음을 알리는 메시지들을 포함한다.
