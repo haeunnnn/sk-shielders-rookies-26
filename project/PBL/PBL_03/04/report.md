@@ -4,8 +4,8 @@
 이 과제는 주어진 `facebook_login.pcap` 추적 파일을 Wireshark를 사용하여 분석하고, HTTPS 통신에서 SSL/TLS 핸드셰이크(Handshake) 과정을 단계별로 이해하고 설명하는 것을 목표로 하였다. 클라이언트와 서버 간에 암호화된 통신 채널이 어떻게 안전하게 수립되고 데이터가 교환되는지, 각 패킷이 어떤 정보를 담고 어떤 역할을 하는지 파악하는 데 중점을 두었다.
 
 ## 2. 문제 상황 및 요구사항 재확인
-- **문제 상황** : `facebook_login.pcap` 파일을 통해 수집된 다수의 HTTPS 패킷에 대한 분석이 필요
-- **요구사항** : `facebook_login.pcap` 추적 파일을 기반으로 SSL 패킷을 분석하고, 다음 SSL/TLS 핸드셰이크 흐름에 따라 각 단계를 상세히 설명
+- **문제 상황** : `facebook_login.pcap` 파일을 통해 수집된 다수의 HTTPS 패킷에 대한 분석이 필요하다.
+- **요구사항** : `facebook_login.pcap` 추적 파일을 기반으로 SSL 패킷을 분석하고, 다음 SSL/TLS 핸드셰이크 흐름에 따라 각 단계를 상세히 설명한다.
 
 1. Client Hello
 2. Server Hello
